@@ -1,0 +1,193 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+function os_create_menu(){
+    $items['user/%user/create-ticket'] = array(
+        'title' => 'Create a ticket',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('os_create_form', 1),
+        'access callback' => 'user_edit_access',
+        'access arguments' => array(1),
+        'weight' => 10,
+        'type' => MENU_LOCAL_TASK,
+    );
+	
+	
+    return $items;
+}
+
+
+function os_create_form($form, &$form_state) {
+    $options = array();
+    //Make connect to OS Ticket database
+    $os_database = array(
+        'database' => variable_get('database'),
+        'username' => variable_get('username'), // assuming this is necessary
+        'password' => variable_get('password'), // assuming this is necessary
+        'host' => variable_get('host'), // assumes localhost
+        'driver' => variable_get('driver'), // replace with your database driver
+    );
+    Database::addConnectionInfo(variable_get('key'), 'default', $os_database);
+    db_set_active(variable_get('key'));
+    $options = db_select('ost_help_topic', 'os')
+                    ->fields('os', array('topic_id', 'topic'))
+                    ->execute()
+                    ->fetchAllKeyed();
+    db_set_active();
+
+    $form['step1'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Open a New Ticket'),
+        '#collapsible' => FALSE,
+        '#collapsed' => FALSE,
+        '#description' => t('Please fill in the form below to open a new ticket.'),
+        '#tree' => TRUE,
+    );
+    $form['step1']['topic'] = array(
+      '#type' => 'select',
+      '#options' => $options,
+      '#title' => t('Help Topic:'),
+      '#requied' => FALSE,
+    );
+
+    $form['step2'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Ticket Details'),
+        '#collapsible' => FALSE,
+        '#collapsed' => FALSE,
+        '#tree' => TRUE,
+        '#description' => t('Please Describe Your Issue'),
+    );
+    $form['step2']['phone'] = array(
+        '#type' => 'textfield',
+        '#default_value' => '',
+        '#required' => FALSE,
+        '#title' => t('Phone number'),
+    );
+    $form['step2']['issue'] = array(
+        '#type' => 'textfield',
+        '#default_value' => '',
+        '#required' => TRUE,
+        '#title' => t('Issue Summary'),
+    );
+    $form['step2']['issue_details'] = array(
+        '#type' => 'textarea',
+        '#default_value' => '',
+        '#required' => TRUE,
+        '#title' => t('Issue Details'),
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Post Ticket',
+    );
+
+    return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ * @param $form
+ * @param $form_state
+ */
+function os_create_form_validate($form, &$form_state){
+    //
+}
+
+/**
+ * Implements hook_form_submit().
+ * @param $form
+ * @param $form_state
+ */
+function os_create_form_submit($form, &$form_state){
+    global $user;
+
+    //Get new ticket info
+    $topic = $form_state['values']['step1']['topic'];
+
+    $email = $user->mail;
+    $name = $user->name;
+    $phone = $form_state['values']['step2']['phone'];
+    $issue = $form_state['values']['step2']['issue'];
+    $details = $form_state['values']['step2']['issue_details'];
+
+    //Make connect to OS Ticket database
+    $os_database = array(
+        'database' => variable_get('database'),
+        'username' => variable_get('username'), // assuming this is necessary
+        'password' => variable_get('password'), // assuming this is necessary
+        'host' => variable_get('host'), // assumes localhost
+        'driver' => variable_get('driver'), // replace with your database driver
+    );
+    Database::addConnectionInfo(variable_get('key'), 'default', $os_database);
+    db_set_active(variable_get('key'));
+    //Connected
+    $check = db_select('ost_user_email', 'om')
+        ->fields('om', array('address'))
+        ->condition('address', $email, '=')
+        ->execute()
+        ->fetchField();
+
+    if ($check != FALSE):
+        $ticket_id = mt_rand(100000, 999999);
+        $user_id = db_select('ost_user_email', 'om')
+            ->fields('om', array('user_id'))
+            ->condition('address', $email, '=')
+            ->execute()
+            ->fetchField();
+
+        $created = date('Y-m-d H:i:s');
+        db_insert('ost_ticket')
+            ->fields(array('ticketID' => $ticket_id, 'user_id' => $user_id, 'topic_id' => (int)$topic, 'created' => $created, 'updated' => $created))
+            ->execute();
+        $id = db_select('ost_ticket', 'ot')
+            ->fields('ot', array('ticket_id'))
+            ->condition('ticketID', $ticket_id, '=')
+            ->execute()
+            ->fetchField();
+
+        db_insert('ost_ticket_thread')
+            ->fields(array('pid' => 0, 'ticket_id' => $id, 'staff_id' => '0', 'thread_type' => 'M', 'body' => $details, 'created' => $created, 'updated' => $created))
+            ->execute();
+        db_insert('ost_ticket__cdata')
+            ->fields(array('ticket_id' => $id, 'subject' => $issue))
+            ->execute();
+
+        //Get form_id for phone and Issue Summary
+        $phone_id = db_select('ost_form_field', 'off')
+            ->fields('off', array('id'))
+            ->condition('name', 'phone', '=')
+            ->execute()
+            ->fetchField();
+        $subject_id = db_select('ost_form_field', 'off')
+            ->fields('off', array('id'))
+            ->condition('name', 'subject', '=')
+            ->execute()
+            ->fetchField();
+        //Set data to ost_form_entry (As I understood - it's a some mapping for ost_form_entry_values)
+        db_insert('ost_form_entry')
+            ->fields(array('form_id' => $subject_id, 'object_id' => $id, 'object_type' => 'T', 'sort' => '1', 'created' => $created, 'updated' => $created ))
+            ->execute();
+        db_insert('ost_form_entry')
+            ->fields(array('form_id' => $phone_id, 'object_id' => $id, 'object_type' => 'U', 'sort' => '1', 'created' => $created, 'updated' => $created ))
+            ->execute();
+        //Get Unique id
+        $unique_field_id = db_select('ost_form_entry', 'oe')
+                                ->fields('oe', array('id'))
+                                ->condition('oe.object_id', $id, '=')
+                                ->execute()
+                                ->fetchField();
+        db_insert('ost_form_entry_values')
+                ->fields(array('entry_id' => $unique_field_id, 'field_id' => $phone_id, 'value' => $phone))
+                ->execute();
+        db_insert('ost_form_entry_values')
+                ->fields(array('entry_id' => $unique_field_id, 'field_id' => $subject_id, 'value' => $issue))
+                ->execute();
+
+echo $unique_field_id;
+    endif;
+    db_set_active(); // without the parameter means set back to the default for the site
+    drupal_set_message('Ticket #' . $ticket_id . ' was saved.', 'notification');
+
+}

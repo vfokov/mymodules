@@ -1,0 +1,5 @@
+name = OS Create
+description = Creating tickets for OS Ticket from Drupal
+package = OS Tickets
+dependencies[] = os_connect
+core = 7.x

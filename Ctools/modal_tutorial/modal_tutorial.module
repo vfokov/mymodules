@@ -1,0 +1,18 @@
+<?php
+
+function modal_tutorial_menu(){
+ $items['tutorial/page'] = array(
+	'title' => 'Modal tutorial page',
+	'page callback' => 'modal_tutorial_page_callback',
+	'access callback' => TRUE,
+	'file' => 'includes/pages.modal_tutorial.inc',
+ );
+ $items['ajax/%ctools_js/show/modal'] = array(
+	'title' => 'Modal content',
+	'page callback' => 'ajax_modal_tutorial_modal_callback',
+	'page arguments' => array(1),
+	'access callback' => TRUE,
+	'file' => 'includes/pages.modal_tutorial.inc',
+ );
+ return $items;
+}

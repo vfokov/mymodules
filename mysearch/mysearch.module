@@ -1,0 +1,51 @@
+<?php
+
+function mysearch_permission() {
+  return array(
+    'access simple page' => array(
+      'title' => t('Access simple page'),
+      'description' => t('Allow users to access simple page'),
+    ),
+    'access arguments page' => array(
+      'title' => t('Access page with arguments'),
+      'description' => t('Allow users to access page with arguments'),
+    ),
+  );
+}
+function mysearch_menu() {
+  $items['mysearch/%'] = array(
+    'page callback' => 'mysearch_arguments',
+    'page arguments' => array(1),
+    'access arguments' => array('access arguments page'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+function mysearch_arguments($first) {
+	$search_for = array('@number' => $first);
+	$search_for1 = $search_for['@number'];
+	$allcontent = mysearch_myfunc($search_for1);
+	$list[] = t("Search for word - @number.", array('@number' => $first));
+	$list[] = t("List of nodes:".$allcontent);
+	$render_array['mysearch_arguments'] = array(
+		'#theme' => 'item_list',
+		'#items' => $list,
+		'#title' => t('Search for words in site nodes like: (sample, simply, dummy, resources, Lorem)'),
+	  );
+	  return $render_array;
+}
+
+function mysearch_myfunc($urlarg){
+	$url = $_SERVER['SERVER_NAME'];
+	$query = "SELECT entity_id FROM `field_data_body` WHERE body_value LIKE '%$urlarg%'";
+	$search_results = db_query($query);
+	$allcontent = "";
+	foreach($search_results as $record){
+	 	$nid = $record->entity_id;
+		$nodes1 = node_load_multiple($nids = array('nid' => $nid));
+		$path=drupal_get_path_alias('node/'.$record->entity_id);
+		$link = "<a href=\"/".$path."\">See node</a>"; 
+		$allcontent = $allcontent."<br />"."<h2>".$nodes1[$nid]->title."</h2>"."<br />".$link."<br />";
+	}
+	return $allcontent;
+}

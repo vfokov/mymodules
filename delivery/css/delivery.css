@@ -1,0 +1,24 @@
+.delivery_view_order {
+    background-color: #FAF0E6;
+    font-size: 14px;
+    padding: 7px 10px;
+    color: red;
+}
+#edit-delivery-pane-field {
+    min-height: 700px;
+}
+#edit-delivery-pane-countries {
+    height: 500px;
+}
+.working_days {
+    height: 225px;
+}
+.disabled {
+    display: none;
+}
+#edit-delivery {
+    max-width: 460px;
+    height: 280px;
+    background-color: #FAF0E6;
+    margin: 0 auto;
+}

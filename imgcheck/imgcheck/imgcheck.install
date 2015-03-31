@@ -1,0 +1,50 @@
+<?php
+
+function imgcheck_schema() {
+
+  $schema['imgcheck'] = array(
+    'description' => 'Images Information',
+    'fields' => array(
+      'pid'  => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique person ID.',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "Creator user's {users}.uid",
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Type of the image.',
+      ),
+      'size' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Size of the image.',
+      ),
+      'dimention' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Dimention of the image',
+      ),
+    ),
+    'primary key' => array('pid'),
+    'indexes' => array(
+      'type'    => array('type'),
+      'size' => array('size'),
+      'dimention'     => array('dimention'),
+    ),
+  );
+
+  return $schema;
+}

@@ -1,0 +1,18 @@
+<?php
+/**
+ * @file
+ * Uninstall function
+ */
+
+/**
+ * Implement hook_uninstall().
+ */
+function os_connect_uninstall(){
+    variable_del('database');
+    variable_del('username');
+    variable_del('password');
+    variable_del('host');
+    variable_del('driver');
+    variable_del('key');
+    variable_del('salt');
+}

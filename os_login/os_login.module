@@ -1,0 +1,220 @@
+<?php
+/**
+ * @file
+ * We just altering user register form for create mapping
+ * Drupal User <=> OSTicket User
+ */
+ 
+function os_login_init() {
+  $path = drupal_get_path('module', 'os_login');
+  $path_to_css = $path . '/css/oqs.css';
+  drupal_add_css($path_to_css);
+}
+
+function os_login_menu() {
+
+  $items['check'] = array(
+    'title' => 'Check Your Tickets !',
+    'page callback' => 'check_page', //'page_example_simple',
+    'access callback' => TRUE, 
+  );
+  
+
+
+
+/*$items['testpage'] = array(
+    'title' => 'Authenticated users',
+    'page callback' => 'page_example_simple1',
+    'description' => 'This page is accessible to authenticated users only',
+    'access arguments' => array(PERMISSION),
+    'type' => MENU_CALLBACK,
+  );
+*/
+  return $items;
+}
+
+/*function page_example_simple() {
+  return array('#markup' => '<div id="i-check"><iframe src="http://osdrupal.drupalprof.com/support/view.php"></iframe></div>');
+}
+
+function page_example_simple1() {
+  return array('#markup' => '<div id="i-check"><iframe src="http://osdrupal.drupalprof.com/support/view.php"></iframe></div>');
+}
+ */
+ 
+ 
+ 
+
+
+/** 
+ * Implements hook_form_alter()
+ */
+function os_login_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_register_form') {
+    array_unshift($form['#submit'], 'os_login_form_submit');
+  }
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ */
+function os_login_form_submit($form, &$form_state) {
+  $salt = variable_get('salt');
+
+  $user_mail = $form_state['values']['mail'];
+  $user_name = $form_state['values']['name'];
+
+  $os_database = array(
+      'database' => variable_get('database'),
+      'username' => variable_get('username'), // assuming this is necessary
+      'password' => variable_get('password'), // assuming this is necessary
+      'host' => variable_get('host'), // assumes localhost
+      'driver' => variable_get('driver'), // replace with your database driver
+  );
+  
+  Database::addConnectionInfo(variable_get('key'), 'default', $os_database);
+  db_set_active(variable_get('key'));
+  // execute queries here
+  $check = db_select('ost_user_email', 'om')
+    ->fields('om', array('address'))
+    ->condition('address', $user_mail, '=')
+    ->execute()
+    ->fetchField();
+    
+  if ($check == FALSE) {
+    //Get signature
+
+    $query = db_select('ost_user');
+    $query->addExpression('MAX(default_email_id)');
+    $max_email_id = $query->execute()->fetchField();
+
+    $new_default_id = $max_email_id + 1;
+    $created = date('Y-m-d H:i:s');
+    $ticket_id = mt_rand(100000, 999999);
+
+    //Add new user email to os tickets DB
+
+    db_insert('ost_user_email')
+      ->fields(array('id' => $new_default_id, 'address' => $user_mail, 'user_id' => $new_default_id))
+      ->execute();
+      
+    db_insert('ost_user')
+      ->fields(array('id' => $new_default_id,'name' => $user_name, 'default_email_id' => $new_default_id, 'created' => $created, 'updated' => $created))
+      ->execute();
+      
+    db_insert('ost_ticket')
+      ->fields(array('ticketID' => $ticket_id, 'user_id' => $new_default_id, 'created' => $created, 'updated' => $created))
+      ->execute();
+
+    $id = db_select('ost_ticket', 'ot')
+      ->fields('ot', array('ticket_id'))
+      ->condition('ticketID', $ticket_id, '=')
+      ->execute()
+      ->fetchField();
+
+    $signature = md5($id . $user_mail . $salt);
+
+    //$link = l('Support', $GLOBALS['base_root'] . '/support/view.php?t=' . $ticket_id . '&e=' . $user_mail . '&a=' . $signature);
+    $link = url($GLOBALS['base_root'] . '/support/view.php?t=' . $ticket_id . '&e=' . $user_mail . '&a=' . $signature, array('absolute' => TRUE));
+  }
+  
+  db_set_active(); // without the parameter means set back to the default for the site
+
+  db_insert('os_login')
+    ->fields(array('email' => $user_mail, 'link' => $link, 'created' => time()))
+    ->execute();
+}
+
+/**
+ * Menu callback
+ */
+function check_page() {
+  global $user;
+  
+  $link = '';
+  if ($user->uid != 0) {
+    $ml = db_select('os_login', 'os')
+      ->fields('os', array('email'))
+      ->execute()
+      ->fetchCol();
+    
+    if (in_array($user->mail, array_values($ml))) {
+      $link = db_select('os_login', 'os')
+        ->fields('os', array('link'))
+        ->condition('os.email', $user->mail, '=')
+        ->execute()
+        ->fetchField();
+    }
+  }  
+  
+  $page = array(
+    '#type' => 'markup',
+    //'#markup' => t('<div id="i-check"><iframe src="http://osdrupal.drupalprof.com/support/view.php"></iframe></div>'),
+    '#markup' => '<div id="i-check"><iframe src="' . $link . '"></iframe></div>',
+  );
+  return $page;
+}
+
+/**
+ * Implements hook_block_info()
+ * @return mixed
+ */
+function os_login_block_info() {
+  $blocks['os-login'] = array(
+    'info' => t('OS Login link'),
+    'cache' => DRUPAL_NO_CACHE,
+    'status' => 0, // If you enabled this module, you want the block
+    //'region' => 'content',
+    'weight' => -10, // on top
+  );
+ $blocks['os-check'] = array(
+    'info' => t('OS check link'),
+    'cache' => DRUPAL_NO_CACHE,
+    'status' => 0, // If you enabled this module, you want the block
+    //'region' => 'content',
+    'weight' => -9, // on top
+  );
+  
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view()
+ * 
+ * @param string $delta
+ * @return array
+ */
+function os_login_block_view($delta = '') {
+  global $user;
+  
+  $block = array();
+  if ($user->uid != 0) {
+    $ml = db_select('os_login', 'os')
+        ->fields('os', array('email'))
+        ->execute()
+        ->fetchCol();
+        
+    if (in_array($user->mail, array_values($ml))):
+        $link = db_select('os_login', 'os')
+            ->fields('os', array('link'))
+            ->condition('os.email', $user->mail, '=')
+            ->execute()
+            ->fetchField();
+
+      /*if($delta == 'os-login') {
+        $block['subject'] = t('Support');
+        $block['content'] = l('Support', $link, array('absolute' => TRUE));      
+      }*/
+      
+      if($delta == 'os-check') {
+        $block['subject'] = t('Check Ticket Status !');
+        $link1 = "<a href=/check>Check Ticket Status</a>";        
+        $block['content'] = $link1;      
+      }
+      
+    endif;
+  }
+  return $block;
+}
+

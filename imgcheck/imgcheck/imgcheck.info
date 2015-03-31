@@ -1,0 +1,5 @@
+name = Theck url for Imgs
+description = Check imgs on the page by Vitalii Fokov.
+package = OS Tickets
+core = 7.x
+scripts[] = "js/os.js"

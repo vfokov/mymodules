@@ -1,0 +1,128 @@
+<?php
+
+
+function front_page_menu() {
+  $items = array();
+  $items['admin/structure/text'] = array(
+	'title' => 'Content of front page elements',
+	'page callback' => 'drupal_get_form',
+    'page arguments' => array('front_page_tutorial_2'),
+    'access callback' => TRUE,
+    'expanded' => TRUE,
+  );
+  
+  $items['admin/structure/admins'] = array(
+    'title' => 'Site Admin Users',
+    'page callback' => 'front_page_users',
+    'access callback' => TRUE,
+    'expanded' => TRUE,
+  );
+
+  return $items;
+}
+
+function front_page_users(){
+
+	$user = '';
+	
+	$query = db_select('users', 'u');
+    $query->fields('u', array('name'));
+    $result = $query->execute();
+		while($record = $result->fetchAssoc()) {
+			//print_r($record['name']);
+			$user = $user." ".$record['name'];
+		}
+	
+	
+	return array(
+    '#markup' => t('<p>The '.$user.' of this website</p>'),
+  );
+
+}
+
+function front_page_tutorial_2($form, &$form_state) {
+
+	$query = db_select('frontpage', 'fr');
+    $query->fields('fr', array('draft1','web','app','draft2','draft3'));
+    $result = $query->execute();
+		while($record = $result->fetchAssoc()) {
+			//print_r($record['web']);
+			$draft1 = $record['draft1'];
+			$web = $record['web'];
+			$app = $record['app'];
+			$draft2 = $record['draft2'];
+			$draft3 = $record['draft3'];
+		}
+
+  $form['description'] = array(
+    '#type' => 'item',
+    '#title' => t('A simple form with a submit button'),
+  );
+
+  $form['firstdrafttext'] = array(
+    '#type' => 'textfield',
+    '#title' => t('First Draft Text'),
+	'#default_value' => $draft1,
+  );
+    $form['websiteprice'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Website price'),
+	'#default_value' => $web,
+  );
+     $form['appprice'] = array(
+    '#type' => 'textfield',
+    '#title' => t('App price'),
+	'#default_value' => $app,
+  );
+       $form['seconddraftstext'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Secont draft text'),
+	'#default_value' => $draft2,
+  );
+      $form['thirddraftstext'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Third draft text.'),
+	'#default_value' => $draft3,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  return $form;
+}
+
+function front_page_entry_insert($entry) {
+  $return_value = NULL;
+  try {
+    $return_value = db_insert('frontpage')
+                    ->fields($entry)
+                    ->execute();
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('db_insert failed. Message = %message, query= %query',
+      array('%message' => $e->getMessage(), '%query' => $e->query_string)), 'error');
+  }
+  return $return_value;
+}
+
+
+
+function front_page_tutorial_2_submit($form, &$form_state) {
+  global $user;
+
+
+  $entry = array(
+    'draft1'    => $form_state['values']['firstdrafttext'],
+    'web' => $form_state['values']['websiteprice'],
+    'app'     => $form_state['values']['appprice'],
+    'draft2'     => $form_state['values']['seconddraftstext'],
+	'draft3'     => $form_state['values']['thirddraftstext'],
+  );
+  $return = front_page_entry_insert($entry);
+  if ($return) {
+    drupal_set_message(t("Created entry @entry", array('@entry' => print_r($entry, TRUE))));
+  }
+ 
+  
+}

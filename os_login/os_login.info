@@ -1,0 +1,5 @@
+name = OS login
+description = OS login by neo.
+package = OS Tickets
+dependencies[] = os_connect
+core = 7.x

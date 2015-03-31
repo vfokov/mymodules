@@ -1,0 +1,150 @@
+<?php
+function myfield_field_info() {
+  return array(
+    // We name our field as the associative name of the array.
+    'myfield_rgb' => array(
+      'label' => t('Select font size for text'),
+      'description' => t('Demonstrates a field composed of an RGB color.'),
+      'default_widget' => 'myfield_3text',
+      'default_formatter' => 'myfield_simple_text',
+    ),
+  );
+}
+
+
+
+function myfield_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  foreach ($items as $delta => $item) {
+    if (!empty($item['rgb'])) {
+      if (!preg_match('@^#[0-9a-f]{6}$@', $item['rgb'])) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'myfield_invalid',
+          'message' => t('Color must be in the HTML format #abcdef.'),
+        );
+      }
+    }
+  }
+}
+
+
+function myfield_field_is_empty($item, $field) {
+  return empty($item['rgb']);
+}
+
+
+function myfield_field_formatter_info() {
+  return array(
+    // This formatter just displays the hex value in the color indicated.
+    'myfield_simple_text' => array(
+      'label' => t('Simple text-based formatter'),
+      'field types' => array('myfield_rgb'),
+    ),
+       
+  );
+}
+
+function myfield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    // This formatter simply outputs the field as text and with a color.
+    case 'myfield_simple_text':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          // We create a render array to produce the desired markup,
+          // "<p style="color: #hexcolor">The color code ... #hexcolor</p>".
+          // See theme_html_tag().
+          '#type' => 'html_tag',
+          '#tag' => 'p',
+          '#attributes' => array(
+            'style' => 'color: ' . $item['rgb'],
+          ),
+          '#value' => t('<b>The color code in this field is @code</b>', array('@code' => $item['rgb'])),
+        );
+      }
+      break;
+  }
+
+  return $element;
+}
+
+
+
+function myfield_field_widget_info() {
+  return array(
+    'myfield_text' => array(
+      'label' => t('RGB value as #ffffff'),
+      'field types' => array('myfield_rgb'),
+    ),
+    
+  );
+}
+
+
+function myfield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $value = print_r($items);
+
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  switch ($instance['widget']['type']) {
+
+   
+      // DELIBERATE fall-through: From here on the myfield_text and
+      // myfield_colorpicker are exactly the same.
+    case 'myfield_text':
+      $widget += array(
+        '#type' => 'textfield',
+        '#default_value' => $value,
+        // Allow a slightly larger size that the field length to allow for some
+        // configurations where all characters won't fit in input field.
+        '#size' => 7,
+        '#maxlength' => 7,
+      );
+      break;
+
+
+
+      // Make this a fieldset with the three text fields.
+      $widget += array(
+        '#type' => 'fieldset',
+        '#element_validate' => array('myfield_3text_validate'),
+
+        // #delta is set so that the validation function will be able
+        // to access external value information which otherwise would be
+        // unavailable.
+        '#delta' => $delta,
+
+        '#attached' => array(
+          'css' => array(drupal_get_path('module', 'myfield') . '/myfield.css'),
+        ),
+      );
+
+      // Create a textfield for saturation values for Red, Green, and Blue.
+      foreach (array('r' => t('Red'), 'g' => t('Green'), 'b' => t('Blue')) as $key => $title) {
+        $widget[$key] = array(
+          '#type' => 'textfield',
+          '#title' => $title,
+          '#size' => 2,
+          '#default_value' => array_shift($match[0]),
+          '#attributes' => array('class' => array('rgb-entry')),
+          '#description' => t('The 2-digit hexadecimal representation of @color saturation, like "a1" or "ff"', array('@color' => $title)),
+        );
+        // Since Form API doesn't allow a fieldset to be required, we
+        // have to require each field element individually.
+        if ($instance['required'] == 1) {
+          $widget[$key]['#required'] = 1;
+        }
+      }
+      break;
+
+  }
+
+  $element['rgb'] = $widget;
+  return $element;
+}
+
+
+
+
+

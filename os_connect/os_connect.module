@@ -1,0 +1,134 @@
+<?php
+
+/**
+ * @file
+ * Form for making orders as farmers
+ */
+define('OS_CONNECT_PERMISSION', 'administer os_connect');
+/**
+ * Implements hook_permission().
+ * @return array
+ */
+function os_connect_permission() {
+    return array(
+        OS_CONNECT_PERMISSION => array(
+            'title' => t('Administer os_connect'),
+            'description' => t(''),
+        ),
+    );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function os_connect_menu(){
+    $items = array();
+    $items['admin/config/services/os-connect'] = array(
+        'title' => 'Os Ticket connection',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('os_connect_form'),
+        'access arguments' => array('administer oc_connect'),
+        'type'=> MENU_CALLBACK,
+    );
+    return $items;
+}
+
+/**
+ * Implements hook_form().
+ * @param $form
+ * @param $form_state
+ * @return mixed
+ */
+function os_connect_form($form, &$form_state){
+    $iframe = variable_get('iframe');
+    $database = variable_get('database');
+    $username = variable_get('username');
+    $password = variable_get('password');
+    $host = variable_get('host');
+    $driver = variable_get('driver');
+    $key = variable_get('key');
+    $salt = variable_get('salt');
+
+    $form['iframe'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Iframe source'),
+        '#required' => TRUE,
+        '#default_value' => $iframe,
+    );
+
+    $form['database'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Database'),
+        '#required' => TRUE,
+        '#default_value' => $database,
+    );
+    $form['username'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Username'),
+        '#required' => TRUE,
+        '#default_value' => $username,
+    );
+    $form['password'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Password'),
+        '#required' => TRUE,
+        '#default_value' => $password,
+    );
+    $form['host'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Host'),
+        '#required' => TRUE,
+        '#default_value' => $host,
+    );
+    $form['driver'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Driver'),
+        '#required' => TRUE,
+        '#default_value' => $driver,
+    );
+    $form['key'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Your Database Key'),
+        '#description' => t("Something that's unique to your OS Ticket"),
+        '#required' => TRUE,
+        '#default_value' => $key,
+    );
+    $form['salt'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Secret Salt'),
+        '#description' => t("You can find this hash on /PATH_TO_OS_TICKET_INSTALATION/include/ost-config.php, line 46"),
+        '#required' => TRUE,
+        '#default_value' => $salt,
+    );
+    $form['submit'] = array(
+        '#type' =>'submit',
+        '#value' => 'Save settings',
+    );
+    return $form;
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ */
+function os_connect_form_validate($form, &$form_state){
+    //
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ */
+function os_connect_form_submit($form, &$form_state){
+
+    variable_set('iframe',$form_state['values']['iframe']);
+    variable_set('database',$form_state['values']['database']);
+    variable_set('username',$form_state['values']['username']);
+    variable_set('password',$form_state['values']['password']);
+    variable_set('host',$form_state['values']['host']);
+    variable_set('driver',$form_state['values']['driver']);
+    variable_set('key',$form_state['values']['key']);
+    variable_set('salt', $form_state['values']['salt']);
+
+    drupal_set_message('Saved', 'notification');
+}

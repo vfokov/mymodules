@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implement hook_shcema()
+ * @return string
+ */
+function delivery_schema() {
+    $schema['commerce_delivery'] = array(
+        'description' => 'Orders and here time slots',
+        'fields' => array(
+            'order_id' => array(
+                'description' => 'The primary identifier for a product, used internally only.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'time_slot' => array(
+                'description' => 'Available time slot',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('order_id'),
+    );
+    return $schema;
+}
+
+/**
+ * Implement hook_uninstall()
+ * 
+ */
+function delivery_uninstall() {
+    drupal_uninstall_schema('delivery');
+}

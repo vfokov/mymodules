@@ -1,0 +1,4 @@
+name = OS Connect
+description = Provide connection information for OS Tickets
+package = OS Tickets
+core = 7.x

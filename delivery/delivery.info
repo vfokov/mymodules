@@ -1,0 +1,14 @@
+name = Delivery
+description = Desired delivery date for chechout step (created by ibit)
+
+dependencies[] = ctools
+dependencies[] = date_popup
+
+files[] = includes/delivery.checkout_pane.inc
+files[] = includes/delivery.logic.inc
+
+#configure = admin/config/workflow/delivery
+
+package = Commerce Extra
+version = 7.x-1.1
+core = 7.x

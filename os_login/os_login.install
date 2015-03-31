@@ -1,0 +1,47 @@
+<?php
+function os_login_schema() {
+
+    $schema['os_login'] = array(
+        'description' => 'Manual selected products',
+        'fields' => array(
+            'id' => array(
+                'description' => 'The primary identifier for a user, used internally only.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+
+            'email' => array(
+                'description' => 'User email',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+
+            'link' => array(
+                'description' => 'Link for user support login',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+            'created' => array(
+                'description' => 'The Unix timestamp when the product was created.',
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+        ),
+        'primary key' => array('id'),
+    );
+    return $schema;
+}
+
+/**
+ * Implement hook_uninstall().
+ */
+function os_login_uninstall() {
+    drupal_uninstall_schema('os_login');
+}

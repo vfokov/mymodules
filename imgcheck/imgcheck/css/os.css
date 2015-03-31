@@ -1,0 +1,9 @@
+iframe#source {
+    border: medium none;
+    height: 825px;
+    overflow: hidden;
+    width: 832px;
+}
+#block-block-2 {
+  display: none;
+}

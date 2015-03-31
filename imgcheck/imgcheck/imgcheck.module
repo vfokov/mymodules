@@ -1,0 +1,120 @@
+<?php
+
+// Creating table for imgs info.
+function imgcheck_enable() {
+  if (db_table_exists('imgcheck') == FALSE) {
+    drupal_install_schema('imgcheck');
+  }
+}
+
+//Connect js file and css file.
+function imgcheck_init() {
+    $path = drupal_get_path('module', 'imgcheck');
+    $path_to_js = $path . '/js/oqs.js';
+    drupal_add_css($path_to_js);
+}
+
+// Form page.
+function imgcheck_menu() {
+  
+  $items = array();
+  $items['urlcheck'] = array(
+  'title' => 'Check URL for Images',
+  'page callback' => 'drupal_get_form',
+  'page arguments' => array('imgcheck_submit_driven_ajax'),
+  'access callback' => TRUE,
+  'expanded' => TRUE,
+  );
+  return $items;
+}
+
+// Input info into db
+function imgcheck_entry_insert($entry) {
+  $return_value = NULL;
+  try {
+    $return_value = db_insert('imgcheck')
+                    ->fields($entry)
+                    ->execute();
+  }
+  catch (Exception $e) {
+
+  }
+  return $return_value;
+}
+
+// Form structure.
+function imgcheck_submit_driven_ajax($form, &$form_state) {
+  $form['box'] = array(
+  '#type' => 'markup',
+  '#prefix' => '<div id="box">',
+  '#suffix' => '</div>',
+  '#markup' => '<h1>You may Enter the url and we will provide the images information on the page</h1>',
+  );
+  
+  $form['url'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Field for URL sample: http://sempertex.com.pl/catalog/4'),
+  '#default_value' => "",
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#ajax' => array(
+      'callback' => 'imgcheck_submit_driven_callback',
+      'wrapper' => 'box',
+    ),
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+
+// Insert image info.
+function imgcheck_get_type($link) {
+  preg_match('/<img(.*)src(.*)=(.*)"(.*)"/U', $link, $result);
+  $size = getimagesize($result[4]);
+  $entry = array(
+  'pid'    => rand(),
+  'uid' => rand(),
+  'type'     => $size['mime'],
+  'size'     => $size[0],
+  'dimention'     => $size[3],
+  );
+  imgcheck_entry_insert($entry);
+}
+
+
+// Get images info.
+function imgcheck_add_img_info($urls) {
+  $page = file_get_contents($urls);
+  preg_match_all('/<img[^>]+>/i', $page, $result); 
+  $max_i = count($result[0]);
+  $i=0;
+  $images_string = "";
+  while ( $i < $max_i ) {
+    imgcheck_get_type($result[0][$i]);
+    $images_string = $images_string . $result[0][$i];
+    $i++;
+  }
+}
+
+
+//Form submit ajax coallback 
+function imgcheck_submit_driven_callback($form, $form_state) {
+  $element_url = $form_state['values']['url'];
+  imgcheck_add_img_info($element_url);
+  $page = file_get_contents($element_url);
+  preg_match_all('/<img[^>]+>/i', $page, $result); 
+  $max_i = count($result[0]);
+  $i=0;
+  $element = $form['box'];
+  $images_string = "";
+  while ( $i < $max_i ) {
+  $images_string = $images_string . $result[0][$i];
+  $i++;
+  }
+  $element['#markup'] ="site content" . $images_string . $test;
+
+return $element;
+}
