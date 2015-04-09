@@ -1,0 +1,28 @@
+<?php
+
+function wdg_test_schema() {
+
+  $schema['wdg_test'] = array(
+    'description' => 'Custom fields',
+    'fields' => array(
+      'pid'  => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique node ID.',
+      ),
+      'value' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Field value',
+      ),
+    ),
+    'primary key' => array('pid'),
+    'indexes' => array(
+      'value'    => array('value'),
+    ),
+  );
+
+  return $schema;
+}

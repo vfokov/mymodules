@@ -1,0 +1,9 @@
+name = wdg_test
+description = wdg_teste by Vitalii Fokov.
+core = 7.x
+package = Views
+dependencies [] = views
+files[] = wdg_test.module
+
+;Views Includes
+files[] = wdg_test.views.inc

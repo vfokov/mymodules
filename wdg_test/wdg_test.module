@@ -1,0 +1,136 @@
+<?php
+
+// Creating table for imgs info.
+function wdg_test_enable() {
+  if (db_table_exists('wdg_test') == FALSE) {
+    drupal_install_schema('wdg_test');
+  }
+}
+
+function wdg_test_form_alter(&$form, $form_state, $form_id) {
+
+$arg0 = arg(0);
+$arg1 = arg(1);
+$arg2 = arg(2);
+$arg3 = arg(3);
+$arg4 = arg(4);
+
+
+drupal_set_message (t(arg(1)." - text"));
+
+	
+	
+  if($arg0 == 'node' & $arg1 == 'add' ){
+  
+     $form['firstdrafttext'] = array(
+		'#type' => 'textfield',
+		'#title' => t('First Draft Text'),
+		'#default_value' => ' Default text',
+	  );
+  }
+
+
+	if($arg0 == 'node' & $arg2 == 'edit'){
+	
+		  	$query = db_select('wdg_test', 'wd');
+			$query->fields('wd', array('value'));
+			$query->condition('pid', array($arg1),'IN');
+			$result = $query->execute();
+			while($record = $result->fetchAssoc()) {
+			
+				$pid = $record['value'];
+				//print $pid;
+
+			}
+	     $form['firstdrafttext1'] = array(
+		'#type' => 'textfield',
+		'#title' => t('First Draft Text'),
+		'#default_value' => $pid,
+	  );
+	}
+
+	
+	
+
+}
+
+
+function lastnodeid(){
+		$query = db_select('node', 'n')->groupBy('nid');
+		$query->fields('n', array('nid'));
+		$query->addExpression('MAX(nid)', 'max_nid');
+		
+		
+		$result = $query->execute();
+		
+		
+		$maxnid = '';
+		
+		while($record = $result->fetchAssoc()) {
+			
+			$nid = $record['nid'];
+			if($record['nid'] > $maxnid)
+			$maxnid = $record['nid'];
+			print $maxnid;
+
+}
+return $maxnid;
+}
+
+function article_node_form_submit($form, &$form_state) {
+	// if creating new node
+	$nid = lastnodeid();
+	$nid = $nid + 1;
+if(isset($form_state['values']['firstdrafttext'])){
+  
+  		$entry = array(
+			'pid'    => $nid,
+			'value'    => $form_state['values']['firstdrafttext'],
+		
+	  );
+	  
+	  $incert = db_insert('wdg_test')
+                    ->fields($entry)
+                    ->execute();
+  
+  }
+   // if editing node 
+ if(isset($form_state['values']['firstdrafttext1'])){ 
+  $nid1 = arg(1); 
+
+  
+    	$entry1 = array(
+		'pid'    => $nid1,
+		'value'    => $form_state['values']['firstdrafttext1'],
+		
+	  );
+	
+	    $count = db_update('wdg_test')
+              ->fields($entry1)
+              ->condition('pid', $nid1)
+              ->execute();
+  
+
+}
+}
+function wdg_test_views_api(){
+	return array(
+	'api' => 3,
+	'path' => drupal_get_path('module','wdg_test').'/includes',
+	);
+
+}
+function context(){
+$number = time();
+
+if ($number % 2 == 0) {
+  //print "It's even";
+}
+
+}
+context();
+
+
+
+
+
