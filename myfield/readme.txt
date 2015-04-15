@@ -1,0 +1,1 @@
+Field changes color using provided CSS code ( #fffff ) in a node 

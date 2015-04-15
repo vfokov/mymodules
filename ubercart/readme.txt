@@ -1,0 +1,1 @@
+Custom 4 currency fields createt for Product content type

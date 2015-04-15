@@ -1,0 +1,1 @@
+Module for a custom landing page. Where user can change page content information in admin backend
